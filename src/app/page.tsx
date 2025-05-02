@@ -1,5 +1,11 @@
+'use client';
+
+import Canvas from "@/components/canva";
+
 export default function() {
   return (
-    <div>This is home page</div>
+    <div>
+      <Canvas />
+    </div>
   )
 }
