@@ -1,11 +1,11 @@
 'use client';
 
-import Canvas from "@/components/canva";
+import CanvasMode from "@/components/canva";
 
 export default function() {
   return (
     <div>
-      <Canvas />
+      <CanvasMode />
     </div>
   )
 }
