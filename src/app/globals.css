@@ -1,0 +1,10 @@
+@import "tailwindcss";
+
+:root {
+  --darkmode: #0f0f0f;
+  --lightmode: #fafafa;
+}
+
+body {
+  background: var(--darkmode);
+}
