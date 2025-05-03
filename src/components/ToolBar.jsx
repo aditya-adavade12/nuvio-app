@@ -1,8 +1,8 @@
 import React from "react";
 
 const tools = [
-  { icon: "arrow_selector_tool", label: "Cursor", value: "hand" },
-  { icon: "pan_tool", label: "Free Draw", value: "freedraw" },
+  { icon: "arrow_selector_tool", label: "Free Draw", value: "freedraw" },
+  { icon: "pan_tool", label: "Cursor", value: "hand" },
   { icon: "rectangle", label: "Rectangle", value: "rectangle" },
   { icon: "change_history", label: "Triangle", value: "triangle" },
   { icon: "circle", label: "Circle", value: "circle" },

@@ -4,7 +4,7 @@ import DropDown from "./components/DropDown";
 import CanvasBoard from "./components/Canvas";
 
 export const App = () => {
-  const [tool, setTool] = useState("line");
+  const [tool, setTool] = useState("freedraw");
   return (
     <div>
       <DropDown tool={tool} />
