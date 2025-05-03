@@ -6,7 +6,7 @@ import CanvasBoard from "./components/Canvas";
 export const App = () => {
   const [tool, setTool] = useState("freedraw");
   return (
-    <div>
+    <div className="overflow-x-hidden overflow-y-hidden">
       <DropDown tool={tool} />
       <CanvasBoard tool={tool} />
       <ToolBar tool={tool} setTool={setTool} />

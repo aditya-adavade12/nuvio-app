@@ -6,6 +6,7 @@ const tools = [
   { icon: "rectangle", label: "Rectangle", value: "rectangle" },
   { icon: "change_history", label: "Triangle", value: "triangle" },
   { icon: "circle", label: "Circle", value: "circle" },
+  { icon: "square", label: "Square", value: "square" },
   { icon: "horizontal_rule", label: "Line", value: "line" },
   { icon: "trending_flat", label: "Arrow", value: "arrow" },
 ];

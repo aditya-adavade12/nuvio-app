@@ -33,6 +33,12 @@ export const CanvasBoard = ({ tool }) => {
   }, [tool]);
 
   useEffect(() => {
+    const stage = stageRef.current;
+    const container = stage.container();
+    container.style.cursor = panMode ? "grab" : "default";
+  }, [panMode]);
+
+  useEffect(() => {
     localStorage.setItem("nuvio-shapes", JSON.stringify(shapes));
   }, [shapes]);
 
@@ -73,11 +79,21 @@ export const CanvasBoard = ({ tool }) => {
     if (!isDrawing || panMode) return;
 
     const position = e.target.getStage().getPointerPosition();
-    const newShape = createShape(tool, startPoint, position);
-    if (!newShape) {
-      return;
+    if (!position) return;
+    const adjustStart = {
+      x: startPoint.x,
+      y: startPoint.y,
+    };
+    const adjustEnd = {
+      x: position.x,
+      y: position.y,
+    };
+
+    const newShape = createShape(tool, adjustStart, adjustEnd);
+
+    if (newShape) {
+      setCurrentShapes(newShape);
     }
-    setCurrentShapes(newShape);
   };
 
   // End the drawing and save
@@ -97,17 +113,19 @@ export const CanvasBoard = ({ tool }) => {
   // Create the Shape
 
   const createShape = (tool, start, end) => {
-    // Co-ordinates
     const { x: x1, y: y1 } = start;
     const { x: x2, y: y2 } = end;
 
-    // Managing the Shapes
-
     switch (tool) {
+      case "square": {
+        const size = Math.min(Math.abs(x2 - x1), Math.abs(y2 - y1));
+        const width = x2 > x1 ? size : -size;
+        const height = y2 > y1 ? size : -size;
+        return { type: "square", x: x1, y: y1, width, height };
+      }
       case "rectangle":
-      case "square":
         const width = x2 - x1;
-        const height = tool === "square" ? width : y2 - y1;
+        const height = y2 - y1;
         return { type: "rect", x: x1, y: y1, width, height };
 
       case "circle": {
@@ -121,12 +139,13 @@ export const CanvasBoard = ({ tool }) => {
       case "arrow":
         return { type: "arrow", points: [x1, y2, x2, y2] };
 
-      case "triangle":
+      case "triangle": {
         return {
           type: "triangle",
-          points: [x1, x2, (x1 + x2) / 2, y1, x2, y2, x1, y2],
+          points: [x1, y1, x2, y2, (x1 + x2) / 2, y1],
           closed: true,
         };
+      }
       default:
         return null;
     }
@@ -141,18 +160,20 @@ export const CanvasBoard = ({ tool }) => {
       container.style.cursor = "grabbing";
       stage.startDrag();
     } else {
+      container.style.cursor = "default";
       handleMouseDown(e);
-      container.style.cursor = "cursor";
     }
   };
 
   const handleStageMouseUp = (e) => {
+    const stage = stageRef.current;
     if (panMode) {
-      const stage = stageRef.current;
       stage.container().style.cursor = "grab";
       stage.stopDrag();
     } else {
       handleMouseUp(e);
+      stage.container().style.cursor = "default";
+      setPanMode(false);
     }
   };
 
@@ -203,6 +224,40 @@ export const CanvasBoard = ({ tool }) => {
     link.click();
   };
 
+  // Scroll & Zoom
+
+  useEffect(() => {
+    const stage = stageRef.current;
+    const container = stage.container();
+
+    const handleWheel = (e) => {
+      e.preventDefault();
+      // to Scroll
+      const deltaY = e.deltaY;
+      const newY = stage.y() - deltaY;
+      stage.y(newY);
+      stage.batchDraw();
+    };
+
+    container.addEventListener("wheel", handleWheel, { passive: false });
+
+    return () => {
+      container.removeEventListener("wheel", handleWheel);
+    };
+  }, []);
+
+  // Handle Dragging
+
+  const handleDragEnd = (e, shapekey) => {
+    setIsDrawing(false);
+    setPanMode(false);
+    const updateShape = shapes.map((shape, i) =>
+      shapekey === i ? { ...shape, x: e.target.x(), y: e.target.y() } : shape
+    );
+    setShapes(updateShape);
+    
+  };
+
   return (
     <div>
       {/* Canvas */}
@@ -213,33 +268,80 @@ export const CanvasBoard = ({ tool }) => {
         onMouseDown={handleStagePan}
         onMouseUp={handleStageMouseUp}
         onMouseMove={handleStageMouseMove}
-        className={panMode ? "cursor-grab" : "cursor"}
+        className={panMode ? "cursor-grab" : "default"}
         draggable={panMode}
       >
         <Layer>
           {/* Mapping over the shapes */}
-          {shapes.map((shape, i) => {
+          {shapes.map((shape, key) => {
             switch (shape.type) {
               case "rect":
                 return (
-                  <Rect key={i} {...shape} stroke="white" strokeWidth={3} />
+                  <Rect
+                    key={key}
+                    {...shape}
+                    stroke="white"
+                    strokeWidth={3}
+                    draggable={!panMode}
+                    onDragEnd={(e) => handleDragEnd(e, key)}
+                  />
                 );
               case "circle":
                 return (
-                  <Circle key={i} {...shape} stroke="white" strokeWidth={3} />
+                  <Circle
+                    key={key}
+                    {...shape}
+                    stroke="white"
+                    strokeWidth={3}
+                    draggable={!panMode}
+                    onDragEnd={(e) => handleDragEnd(e, key)}
+                  />
+                );
+              case "square":
+                return (
+                  <Rect
+                    key={key}
+                    {...shape}
+                    stroke="white"
+                    strokeWidth={3}
+                    onDragEnd={(e) => handleDragEnd(e, key)}
+                    draggable={!panMode}
+                  />
                 );
               case "line":
                 return (
                   <Line
-                    key={i}
-                    points={shape.points}
+                    key={key}
+                    {...shape}
                     stroke="white"
+                    strokeWidth={3}
                     closed={shape.closed || false}
+                    onDragEnd={(e) => handleDragEnd(e, key)}
+                    draggable={!panMode}
                   />
                 );
               case "arrow":
                 return (
-                  <Arrow key={i} {...shape} stroke="white" strokeWidth={3} />
+                  <Arrow
+                    key={key}
+                    {...shape}
+                    stroke="white"
+                    strokeWidth={3}
+                    onDragEnd={(e) => handleDragEnd(e, key)}
+                    draggable={!panMode}
+                  />
+                );
+              case "triangle":
+                return (
+                  <Line
+                    key={key}
+                    points={shape.points}
+                    stroke="white"
+                    strokeWidth={3}
+                    closed
+                    onDragEnd={(e) => handleDragEnd(e, key)}
+                    draggable={!panMode}
+                  />
                 );
               default:
                 return null;
@@ -247,16 +349,19 @@ export const CanvasBoard = ({ tool }) => {
           })}
           {currentShape && (
             <>
-              {currentShape.type == "rect" && (
+              {currentShape.type === "rect" && (
                 <Rect {...currentShape} stroke="white" />
               )}
-              {currentShape.type == "circle" && (
+              {currentShape.type === "square" && (
+                <Rect {...currentShape} stroke="white" />
+              )}
+              {currentShape.type === "circle" && (
                 <Circle {...currentShape} stroke="white" />
               )}
-              {currentShape.type == "line" && (
+              {currentShape.type === "line" && (
                 <Line {...currentShape} stroke="white" />
               )}
-              {currentShape.type == "arrow" && (
+              {currentShape.type === "arrow" && (
                 <Arrow {...currentShape} stroke="white" />
               )}
             </>
